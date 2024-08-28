@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Proof of Concept</title>
+    <script src="/index.js"></script>
+</head>
+<body>
+    <button id="automatic-location">Automatic Location</button>
+    <form>
+        <label for="zip-input">ZIP / Postal Code:</label>
+        <input id="zip-input" type="number" name="zip">
+        <select id="country-input" name="country">
+            <option value="">
+                Select country...
+            </option>
+        </select>
+        <input id="zip-submit" type="button" value="Submit">
+    </form>
+    <textarea id="dump" autocorrect="off" readonly style="width: 50em; height: 200em;"></textarea>
+</body>
+</html>
