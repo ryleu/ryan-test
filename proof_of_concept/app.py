@@ -1,23 +1,27 @@
 from flask import Flask, request
 from os import environ
 from requests import get
-from json import loads, dumps
+from json import dumps
 
 api_key = environ["OPENWEATHERMAP_API_KEY"]
 
 app = Flask(__name__)
 
-def get_coords_zip(zip, country):
-    response = get(f"http://api.openweathermap.org/geo/1.0/zip?zip={zip},{country}&appid={api_key}").json()
+def get_coords_zip(zip):
+    response = get(f"http://api.openweathermap.org/geo/1.0/zip?zip={zip},US&appid={api_key}").json()
+    return (response["lon"], response["lat"])
+
+def get_coords_city(city, state):
+    response = get(f"http://api.openweathermap.org/geo/1.0/direct?q={city},{state},US&limit=1&appid={api_key}").json()[0]
     return (response["lon"], response["lat"])
 
 def get_weather(longitude, latitude):
-    response = get(f"https://api.openweathermap.org/data/2.5/weather?lat={latitude}&lon={longitude}&appid={api_key}").json()
+    response = get(f"https://api.openweathermap.org/data/2.5/forecast?lat={latitude}&lon={longitude}&units=imperial&appid={api_key}").json()
     return dumps(response, indent = 2)
 
 @app.route("/")
 def _index_html():
-    with open("index.html") as f:
+    with open("src/index.html") as f:
         index = f.read()
     
     response = app.make_response(index)
@@ -27,21 +31,11 @@ def _index_html():
 
 @app.route("/index.js")
 def _index_js():
-    with open("index.js") as f:
+    with open("src/index.js") as f:
         index = f.read()
     
     response = app.make_response(index)
     response.mimetype = "text/javascript"
-
-    return response
-
-@app.route("/countries.json")
-def _countries():
-    with open("countries.json") as f:
-        index = f.read()
-    
-    response = app.make_response(index)
-    response.mimetype = "application/json"
 
     return response
 
@@ -54,15 +48,15 @@ def _get():
         return get_weather(longitude, latitude)
 
     zip_code = request.args.get("zip", None)
-    country_code = request.args.get("country", None)
 
-    if zip_code is not None and country_code is not None:
-        return get_weather(*get_coords_zip(zip_code, country_code))
+    if zip_code is not None:
+        return get_weather(*get_coords_zip(zip_code))
 
     city = request.args.get("city", None)
+    state = request.args.get("state", None)
 
-    if city is not None:
-        return get_weather(*get_coords_city(city))
+    if city is not None and state is not None:
+        return get_weather(*get_coords_city(city, state))
 
     return dumps({
         "error": "you are dumb and bad"
