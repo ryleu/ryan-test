@@ -1,4 +1,5 @@
-require('dotenv').config()
+'use strict'
+
 const express = require('express');
 const fs = require('node:fs');
 const app = express();
@@ -98,6 +99,4 @@ app.get('/forecast', async (q, s) => handleApiError(q, s, async (req, res) => {
     res.send(forecast);
 }));
 
-app.listen(port, () => {
-    console.log(`Example app listening on port ${port}`);
-});
+module.exports = app;
