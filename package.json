@@ -19,8 +19,5 @@
   "dependencies": {
     "dotenv": "^16.4.5",
     "express": "^4.19.2"
-  },
-  "devDependencies": {
-    "claudia": "^5.14.1"
   }
 }
