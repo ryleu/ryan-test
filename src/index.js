@@ -75,7 +75,7 @@ function populateStates() {
 }
 
 async function getWeather(data) {
-    const url = new URL(`${window.location.origin}/get`);
+    const url = new URL(`${window.location.origin}/forecast`);
     for (const [key, value] of Object.entries(data)) {
         url.searchParams.set(key, value);
     }
