@@ -17,11 +17,22 @@
   "homepage": "https://github.com/ryleu/ryan-test#readme",
   "description": "",
   "dependencies": {
+    "aws-amplify": "^6.5.3",
     "aws-serverless-express": "^3.4.0",
     "dotenv": "^16.4.5",
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "serverless-http": "^3.2.0"
   },
   "devDependencies": {
-    "serverless-offline": "^13.7.0"
+    "@aws-amplify/backend": "^1.2.0",
+    "@aws-amplify/backend-cli": "^1.2.5",
+    "aws-cdk": "^2.155.0",
+    "aws-cdk-lib": "^2.155.0",
+    "claudia": "^5.14.1",
+    "constructs": "^10.3.0",
+    "esbuild": "^0.23.1",
+    "serverless-offline": "^13.7.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
   }
 }

@@ -3,21 +3,32 @@
 const express = require('express');
 const fs = require('node:fs');
 const app = express();
-const port = process.env.PORT;
 const api_key = process.env.OPENWEATHERMAP_API_KEY;
 
+const main_js = fs.readFileSync("src/index.js", { encoding: "utf8" });
+const main_page = fs.readFileSync("src/index.html", { encoding: "utf8" }).replace(
+    '<script src="/index.js"></script>',
+    `<script>${main_js}</script>`
+);
+const main_css = fs.readFileSync("src/index.css", { encoding: "utf8" });
+
+// STATIC ENDPOINTS //
+
 app.get('/', (req, res) => {
-    let file = fs.readFileSync("src/index.html", { encoding: "utf8" });
     res.appendHeader("Content-Type", "text/html");
-    res.send(file);
+    res.send(main_page);
 });
-
 app.get('/index.js', (req, res) => {
-    let file = fs.readFileSync("src/index.js", { encoding: "utf8" });
     res.appendHeader("Content-Type", "text/javascript");
-    res.send(file);
+    res.send(main_js);
+});
+app.get('/index.css', (req, res) => {
+    res.appendHeader
 });
 
+// API ENDPOINTS //
+
+// this isn't ideal, but it is better than crashing
 async function handleApiError(req, res, callback) {
     try {
         await callback(req, res);
@@ -75,7 +86,9 @@ app.get('/forecast', async (q, s) => handleApiError(q, s, async (req, res) => {
     let city = req.query.city;
     let state = req.query.state;
 
+    // todo: consider a proper router
     if (zip) {
+        // geolocation api is free, so we don't mind making two calls
         let coords = await coordsFromZip(zip);
         latitude = coords.lat;
         longitude = coords.lon;
@@ -95,8 +108,19 @@ app.get('/forecast', async (q, s) => handleApiError(q, s, async (req, res) => {
     }
 
     let forecast = await getForecast(latitude, longitude);
+
     res.appendHeader("Content-Type", "application/json");
     res.send(forecast);
 }));
 
-module.exports = app;
+function appWrapper(req, res) {
+    // for some reason, serverless will pass an empty url
+    // when this happens, express will freak out
+    if (!req.path) {
+        req.url = "/";
+    }
+
+    return app(req, res);
+}
+
+module.exports = appWrapper;
