@@ -5,39 +5,7 @@ const fs = require('node:fs');
 const app = express();
 const api_key = process.env.OPENWEATHERMAP_API_KEY;
 
-const main_js = fs.readFileSync("src/index.js", { encoding: "utf8" });
-const main_page = fs.readFileSync("src/index.html", { encoding: "utf8" }).replace(
-    '<script src="/index.js"></script>',
-    `<script>${main_js}</script>`
-);
-const main_css = fs.readFileSync("src/index.css", { encoding: "utf8" });
-
-// STATIC ENDPOINTS //
-
-app.get('/', (req, res) => {
-    res.appendHeader("Content-Type", "text/html");
-    res.send(main_page);
-});
-app.get('/index.js', (req, res) => {
-    res.appendHeader("Content-Type", "text/javascript");
-    res.send(main_js);
-});
-app.get('/index.css', (req, res) => {
-    res.appendHeader
-});
-
 // API ENDPOINTS //
-
-// this isn't ideal, but it is better than crashing
-async function handleApiError(req, res, callback) {
-    try {
-        await callback(req, res);
-    } catch (e) {
-        console.error(e.message);
-        res.statusCode = 500;
-        res.send("Internal error");
-    }
-}
 
 async function coordsFromZip(zip) {
     // api docs ask that we not directly search for weather by zip code
@@ -58,7 +26,7 @@ async function coordsFromCity(city, state) {
         `http://api.openweathermap.org/geo/1.0/direct?q=${city},${state},US&limit=1&appid=${api_key}`
     )).json());
 
-    if (response.cod !== "200") {
+    if (response.cod && response.cod !== "200") {
         throw new Error("in coordsFromCity: " + JSON.stringify(response));
     }
 
@@ -67,60 +35,96 @@ async function coordsFromCity(city, state) {
     return { lon: firstResult.lon, lat: firstResult.lat };
 }
 
-async function getForecast(latitude, longitude) {
-    let response = await (await fetch(
-        `https://api.openweathermap.org/data/2.5/forecast?lat=${latitude}&lon=${longitude}&units=imperial&appid=${api_key}`
-    )).json();
-
-    if (response.cod !== "200") {
-        throw new Error("in getForecast: " + JSON.stringify(response));
-    }
-
-    return response;
-}
-
-app.get('/forecast', async (q, s) => handleApiError(q, s, async (req, res) => {
-    let latitude, longitude;
-
-    let zip = req.query.zip;
+/**
+ * Get coordinates from city and country or zip
+ */
+app.get('/coordinates', async (req, res) => {
     let city = req.query.city;
     let state = req.query.state;
+    let zip = req.query.zip;
 
-    // todo: consider a proper router
-    if (zip) {
-        // geolocation api is free, so we don't mind making two calls
-        let coords = await coordsFromZip(zip);
-        latitude = coords.lat;
-        longitude = coords.lon;
-    } else if (city && state) {
-        let coords = await coordsFromCity(city, state);
-        latitude = coords.lat;
-        longitude = coords.lon;
+    // todo: check login
+
+    let data;
+
+    if (city && state) {
+        data = await coordsFromCity(city, state);
+    } else if (zip) {
+        data = await coordsFromZip(zip);
     } else {
-        latitude = req.query.lat;
-        longitude = req.query.lon;
-    }
-
-    if (!latitude || !longitude) {
         res.statusCode = 400;
-        res.send("Invalid latitude and longitude");
+        res.send("Missing required parameters");
         return;
     }
 
-    let forecast = await getForecast(latitude, longitude);
-
-    res.appendHeader("Content-Type", "application/json");
-    res.send(forecast);
-}));
-
-function appWrapper(req, res) {
-    // for some reason, serverless will pass an empty url
-    // when this happens, express will freak out
-    if (!req.path) {
-        req.url = "/";
+    if (data.cod && data.cod !== "200") {
+        throw new Error(JSON.stringify(data));
     }
 
-    return app(req, res);
+    res.appendHeader("Content-Type", "application/json");
+    res.send({
+        name: data.name,
+        country: data.country,
+        lat: data.lat,
+        lon: data.lon,
+    });
+});
+
+/**
+ * Get the forecast from coordinates
+ */
+app.get('/forecast', async (req, res) => {
+    let lat = req.query.lat;
+    let lon = req.query.lon;
+
+    // todo: check login
+
+    let data = await (await fetch(
+        `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=imperial&appid=${api_key}`
+    )).json();
+
+    if (data.cod && data.cod !== "200") {
+        throw new Error(JSON.stringify(data));
+    }
+
+    res.appendHeader("Content-Type", "application/json");
+    res.send(data);
+});
+
+/**
+ * Get the city from coordinates
+ */
+app.get('/city', async (req, res) => {
+    const lat = req.query.lat;
+    const lon = req.query.lon;
+
+    // todo: check login
+
+    let data = await (await fetch(
+        `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${api_key}`
+    )).json();
+
+    if (data.cod && data.cod !== "200") {
+        throw new Error(JSON.stringify(response));
+    }
+
+    res.appendHeader("Content-Type", "application/json");
+    res.send({
+        name: data.name,
+        country: data.country,
+        state: data.state,
+    });
+});
+
+async function appWrapper(req, res) {
+    // not great for prod, but should do for a demo
+    try {
+        await app(req, res);
+    } catch (e) {
+        console.error(e.message);
+        res.statusCode = 500;
+        res.send("Internal error");
+    }
 }
 
 module.exports = appWrapper;

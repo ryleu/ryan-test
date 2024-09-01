@@ -10,6 +10,8 @@ let dump;
 let coords;
 let buttons;
 
+const BASE_URL = "http://localhost:3000/dev"
+
 const STATES = {
     "Alabama": "AL",
     "Alaska": "AK",
@@ -74,11 +76,27 @@ function populateStates() {
     }
 }
 
-async function getWeather(data) {
-    const url = new URL(`${window.location.origin}/forecast`);
+async function getCoordinates(data) {
+    const url = new URL(`${BASE_URL}/coordinates`);
     for (const [key, value] of Object.entries(data)) {
         url.searchParams.set(key, value);
     }
+    const response = await fetch(url);
+    return await response.json();
+}
+
+async function getWeather(data) {
+    if (!data.lat || !data.lon) {
+        const response = await getCoordinates(data);
+        data.lat = response.lat;
+        data.lon = response.lon;
+    }
+
+    const url = new URL(`${BASE_URL}/forecast`);
+    for (const [key, value] of Object.entries(data)) {
+        url.searchParams.set(key, value);
+    }
+
     const response = await fetch(url);
     return response.text().then((value) => {
         dump.innerHTML = value;

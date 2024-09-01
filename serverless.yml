@@ -15,16 +15,9 @@ functions:
   app:
     handler: weather.app
     events:
-      - http: 'GET /'
-      - http: 'GET /forecast'
-      - http: 'GET /index.js'
-      - http: 'GET /index.html'
-      - http: 'GET /index.css'
-
-package:
-  patterns:
-    - src/index.html
-    - src/index.js
+      - http: 'GET /forecast' 
+      - http: 'GET /city'
+      - http: 'GET /coordinates'
 
 plugins:
   - serverless-offline
