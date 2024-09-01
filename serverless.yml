@@ -1,0 +1,23 @@
+service: ryan-test
+app: ryan-test
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs20.x
+  region: us-east-1
+  environment:
+    OPENWEATHERMAP_API_KEY: ${param:OPENWEATHERMAP_API_KEY}
+    PORT: ${param:PORT, 80}
+
+functions:
+  app:
+    handler: weather.app
+    events:
+      - http: 'GET /forecast' 
+      - http: 'GET /city'
+      - http: 'GET /coordinates'
+
+plugins:
+  - serverless-offline
