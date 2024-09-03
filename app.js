@@ -91,31 +91,6 @@ app.get('/forecast', async (req, res) => {
     res.send(data);
 });
 
-/**
- * Get the city from coordinates
- */
-app.get('/city', async (req, res) => {
-    const lat = req.query.lat;
-    const lon = req.query.lon;
-
-    // todo: check login
-
-    let data = await (await fetch(
-        `http://api.openweathermap.org/geo/1.0/reverse?lat=${lat}&lon=${lon}&limit=1&appid=${api_key}`
-    )).json();
-
-    if (data.cod && data.cod !== "200") {
-        throw new Error(JSON.stringify(response));
-    }
-
-    res.appendHeader("Content-Type", "application/json");
-    res.send({
-        name: data.name,
-        country: data.country,
-        state: data.state,
-    });
-});
-
 async function appWrapper(req, res) {
     // not great for prod, but should do for a demo
     try {
