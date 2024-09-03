@@ -4,8 +4,12 @@ const express = require('express');
 const fs = require('node:fs');
 const app = express();
 const api_key = process.env.OPENWEATHERMAP_API_KEY;
+const allowed_url = process.env.ALLOWED_URL;
+console.log(allowed_url);
 
-// API ENDPOINTS //
+function applyCrossOrigin(res) {
+    res.appendHeader("Access-Control-Allow-Origin", allowed_url);
+}
 
 async function coordsFromZip(zip) {
     // api docs ask that we not directly search for weather by zip code
@@ -14,7 +18,9 @@ async function coordsFromZip(zip) {
     )).json();
 
     if (response.cod !== "200" && response.cod !== undefined) {
-        throw new Error("in coordsFromZip: " + JSON.stringify(response));
+        res.statusCode = 400;
+        res.send(data);
+        return;
     }
 
     return { lon: response.lon, lat: response.lat };
@@ -27,7 +33,9 @@ async function coordsFromCity(city, state) {
     )).json());
 
     if (response.cod && response.cod !== "200") {
-        throw new Error("in coordsFromCity: " + JSON.stringify(response));
+        res.statusCode = 400;
+        res.send(data);
+        return;
     }
 
     // the closest match to the city will do for this demo
@@ -39,6 +47,7 @@ async function coordsFromCity(city, state) {
  * Get coordinates from city and country or zip
  */
 app.get('/coordinates', async (req, res) => {
+    applyCrossOrigin(res);
     let city = req.query.city;
     let state = req.query.state;
     let zip = req.query.zip;
@@ -58,7 +67,9 @@ app.get('/coordinates', async (req, res) => {
     }
 
     if (data.cod && data.cod !== "200") {
-        throw new Error(JSON.stringify(data));
+        res.statusCode = 400;
+        res.send(data);
+        return;
     }
 
     res.appendHeader("Content-Type", "application/json");
@@ -74,8 +85,15 @@ app.get('/coordinates', async (req, res) => {
  * Get the forecast from coordinates
  */
 app.get('/forecast', async (req, res) => {
+    applyCrossOrigin(res);
     let lat = req.query.lat;
     let lon = req.query.lon;
+
+    if (!lat || !lon) {
+        res.statusCode = 400;
+        res.send("bad latitude or longitude");
+        return;
+    }
 
     // todo: check login
 
@@ -84,22 +102,13 @@ app.get('/forecast', async (req, res) => {
     )).json();
 
     if (data.cod && data.cod !== "200") {
-        throw new Error(JSON.stringify(data));
+        res.statusCode = 400;
+        res.send(data);
+        return;
     }
 
     res.appendHeader("Content-Type", "application/json");
     res.send(data);
 });
 
-async function appWrapper(req, res) {
-    // not great for prod, but should do for a demo
-    try {
-        await app(req, res);
-    } catch (e) {
-        console.error(e.message);
-        res.statusCode = 500;
-        res.send("Internal error");
-    }
-}
-
-module.exports = appWrapper;
+module.exports = app;

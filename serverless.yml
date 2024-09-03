@@ -9,14 +9,14 @@ provider:
   region: us-east-1
   environment:
     OPENWEATHERMAP_API_KEY: ${param:OPENWEATHERMAP_API_KEY}
+    ALLOWED_URL: ${param:ALLOWED_URL, "*"}
     PORT: ${param:PORT, 80}
 
 functions:
   app:
     handler: weather.app
     events:
-      - http: 'GET /forecast' 
-      - http: 'GET /city'
+      - http: 'GET /forecast'
       - http: 'GET /coordinates'
 
 plugins:
